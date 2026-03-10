@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Weather App</string>
+
+    <!-- Content Descriptions -->
+    <string name="cd_back">Navigate back</string>
+    <string name="cd_search">Search cities</string>
+    <string name="cd_settings">Settings</string>
+    <string name="cd_favorite">Toggle favorite</string>
+    <string name="cd_delete">Delete city</string>
+
+    <!-- Error Messages -->
+    <string name="error_network">Network connection error</string>
+    <string name="error_timeout">Request timeout</string>
+    <string name="error_unknown">Unknown error occurred</string>
+    <string name="error_no_city">City not found</string>
+
+    <!-- Weather Labels -->
+    <string name="label_humidity">Humidity</string>
+    <string name="label_wind">Wind</string>
+    <string name="label_visibility">Visibility</string>
+    <string name="label_pressure">Pressure</string>
+    <string name="label_uv">UV Index</string>
+    <string name="label_precipitation">Precipitation</string>
+    <string name="label_feels_like">Feels like</string>
+
+    <!-- Units -->
+    <string name="unit_percent">%</string>
+    <string name="unit_celsius">°C</string>
+    <string name="unit_fahrenheit">°F</string>
+    <string name="unit_kph">km/h</string>
+    <string name="unit_mph">mph</string>
+    <string name="unit_mm">mm</string>
+    <string name="unit_mb">mb</string>
+    <string name="unit_km">km</string>
+</resources>
