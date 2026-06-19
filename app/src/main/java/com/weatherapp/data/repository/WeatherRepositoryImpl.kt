@@ -12,12 +12,12 @@ import com.weatherapp.utils.Resource
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 import com.google.gson.Gson
 import com.weatherapp.data.remote.dto.toDomain
-import kotlinx.coroutines.flow.emitAll
+import com.weatherapp.data.remote.dto.toCity
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -26,7 +26,9 @@ class WeatherRepositoryImpl @Inject constructor(
     private val database: AppDatabase,
     private val remoteDataSource: RemoteDataSource,
     private val settingsDataStore: SettingsDataStore,
-    private val gson: Gson
+    private val cacheManager: com.weatherapp.utils.WeatherCacheManager,
+    private val gson: Gson,
+    @dagger.hilt.android.qualifiers.ApplicationContext private val context: android.content.Context
 ) : WeatherRepository {
 
     // Weather data
@@ -70,14 +72,24 @@ class WeatherRepositoryImpl @Inject constructor(
         }
     }
 
-    override fun getLastWeather(): Flow<Weather?> = flow {
-        val cache = database.cityDao().getDefaultCity().map { cityEntity ->
-            cityEntity?.let {
-                // In production, properly map from cache
-                null
+    override suspend fun searchCities(query: String): Resource<List<City>> = withContext(Dispatchers.IO) {
+        when (val result = remoteDataSource.searchCities(query)) {
+            is Resource.Success -> {
+                Resource.Success(result.data.map { it.toCity() })
+            }
+            is Resource.Error -> {
+                Resource.Error(result.message, result.code, result.isNetworkError)
+            }
+            is Resource.Loading -> Resource.Loading
+        }
+    }
+
+    override fun getLastWeather(): Flow<Weather?> {
+        return database.weatherCacheDao().getLastWeather().map { cacheEntity ->
+            cacheEntity?.let {
+                gson.fromJson(it.weatherData, Weather::class.java)
             }
         }
-        emitAll(cache)
     }
 
     // City management
@@ -106,6 +118,13 @@ class WeatherRepositoryImpl @Inject constructor(
         database.cityDao().clearDefaultCity()
         database.cityDao().setDefaultCity(cityId)
         settingsDataStore.setDefaultCityId(cityId)
+
+        // Fetch weather for the new default city to update the widget
+        val city = database.cityDao().getCityById(cityId).first()
+        city?.let {
+            getCurrentWeather(it.cityName)
+        }
+        com.weatherapp.presentation.widget.WidgetUpdater.update(context)
     }
 
     override fun getDefaultCity(): Flow<City?> {
@@ -150,7 +169,7 @@ class WeatherRepositoryImpl @Inject constructor(
         database.preferencesDao().updateTemperatureUnit(unit.name)
     }
 
-    suspend fun updateWindSpeedUnit(unit: WindSpeedUnit) {
+    override suspend fun updateWindSpeedUnit(unit: WindSpeedUnit) {
         settingsDataStore.updateWindSpeedUnit(unit)
         // Add database update if needed
     }
@@ -163,6 +182,12 @@ class WeatherRepositoryImpl @Inject constructor(
     override suspend fun toggleNotifications(enabled: Boolean) {
         settingsDataStore.toggleNotifications(enabled)
         database.preferencesDao().toggleNotifications(enabled)
+        
+        if (enabled) {
+            cacheManager.scheduleWeatherAlerts()
+        } else {
+            cacheManager.cancelWeatherAlerts()
+        }
     }
 
     // Offline support
@@ -173,16 +198,17 @@ class WeatherRepositoryImpl @Inject constructor(
             timestamp = System.currentTimeMillis(),
             lastUpdated = weather.current.lastUpdated
         )
-        // Save to database
-        // database.weatherCacheDao().insert(cacheEntity)
+        database.weatherCacheDao().insert(cacheEntity)
+        com.weatherapp.presentation.widget.WidgetUpdater.update(context)
     }
 
     override suspend fun clearCache() {
-        // database.weatherCacheDao().clearAll()
+        database.weatherCacheDao().clearAll()
     }
 
     private suspend fun getCachedWeather(city: String): Weather? {
-        // Implement cache retrieval
-        return null
+        return database.weatherCacheDao().getByCityName(city)?.let {
+            gson.fromJson(it.weatherData, Weather::class.java)
+        }
     }
 }

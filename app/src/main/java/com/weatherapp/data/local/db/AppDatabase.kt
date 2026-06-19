@@ -8,6 +8,7 @@ import android.content.Context
 import com.weatherapp.data.local.db.converters.Converters
 import com.weatherapp.data.local.db.dao.CityDao
 import com.weatherapp.data.local.db.dao.PreferencesDao
+import com.weatherapp.data.local.db.dao.WeatherCacheDao
 import com.weatherapp.data.local.db.entity.CityEntity
 import com.weatherapp.data.local.db.entity.PreferencesEntity
 import com.weatherapp.data.local.db.entity.WeatherCacheEntity
@@ -26,6 +27,7 @@ abstract class AppDatabase : RoomDatabase() {
 
     abstract fun cityDao(): CityDao
     abstract fun preferencesDao(): PreferencesDao
+    abstract fun weatherCacheDao(): WeatherCacheDao
 
     companion object {
         @Volatile

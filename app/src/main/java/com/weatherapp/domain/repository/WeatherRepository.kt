@@ -12,6 +12,7 @@ interface WeatherRepository {
     // Weather data
     suspend fun getCurrentWeather(city: String): Resource<Weather>
     suspend fun getCurrentWeather(lat: Double, lon: Double): Resource<Weather>
+    suspend fun searchCities(query: String): Resource<List<City>>
     fun getLastWeather(): Flow<Weather?>
 
     // City management
@@ -26,6 +27,7 @@ interface WeatherRepository {
     fun getUserPreferences(): Flow<UserPreferences>
     suspend fun updateUserPreferences(preferences: UserPreferences)
     suspend fun updateTemperatureUnit(unit: TemperatureUnit)
+    suspend fun updateWindSpeedUnit(unit: com.weatherapp.domain.model.WindSpeedUnit)
     suspend fun updateThemeMode(mode: ThemeMode)
     suspend fun toggleNotifications(enabled: Boolean)
 

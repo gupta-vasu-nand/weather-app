@@ -15,10 +15,12 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import kotlin.time.Duration.Companion.milliseconds
 
 @HiltViewModel
 class HomeViewModel @Inject constructor(
@@ -39,7 +41,7 @@ class HomeViewModel @Inject constructor(
         // Auto refresh every 30 minutes
         viewModelScope.launch {
             while (true) {
-                delay(30 * 60 * 1000L) // 30 minutes
+                delay((30 * 60 * 1000L).milliseconds) // 30 minutes
                 refreshWeather()
             }
         }
@@ -49,11 +51,13 @@ class HomeViewModel @Inject constructor(
         viewModelScope.launch {
             combine(
                 getSavedCitiesUseCase(),
-                updatePreferencesUseCase.getPreferences()
+                updatePreferencesUseCase.getPreferences().distinctUntilChanged()
             ) { cities, preferences ->
                 val defaultCity = cities.find { it.id == preferences.defaultCityId }
                 val selectedCity = defaultCity?.cityName ?: cities.firstOrNull()?.cityName ?: "Delhi"
                 val selectedCityId = defaultCity?.id ?: cities.firstOrNull()?.id
+
+                val isNewCity = _state.value.selectedCity != selectedCity
 
                 _state.update {
                     it.copy(
@@ -63,8 +67,9 @@ class HomeViewModel @Inject constructor(
                     )
                 }
 
-                // Load weather for the selected city
-                if (cities.isNotEmpty()) {
+                // Only load weather if it's the first time or the city has actually changed
+                // This prevents re-fetching on every screen navigation
+                if (isNewCity || _state.value.weather == null) {
                     loadWeather(selectedCity)
                 }
             }.launchIn(viewModelScope)
@@ -104,6 +109,7 @@ class HomeViewModel @Inject constructor(
                         it.copy(
                             isLoading = false,
                             weather = result.data,
+                            error = null,
                             lastUpdated = System.currentTimeMillis()
                         )
                     }
@@ -126,8 +132,30 @@ class HomeViewModel @Inject constructor(
     fun refreshWeather() {
         viewModelScope.launch {
             _state.update { it.copy(isRefreshing = true) }
-            loadWeather(_state.value.selectedCity)
-            _state.update { it.copy(isRefreshing = false) }
+            // Explicitly load weather ignoring cache or same-city checks if necessary
+            val result = getCurrentWeatherUseCase(_state.value.selectedCity)
+            
+            when (result) {
+                is Resource.Success -> {
+                    _state.update {
+                        it.copy(
+                            isRefreshing = false,
+                            weather = result.data,
+                            error = null,
+                            lastUpdated = System.currentTimeMillis()
+                        )
+                    }
+                }
+                is Resource.Error -> {
+                    _state.update {
+                        it.copy(
+                            isRefreshing = false,
+                            error = result.message
+                        )
+                    }
+                }
+                else -> {}
+            }
         }
     }
 
@@ -140,6 +168,7 @@ class HomeViewModel @Inject constructor(
                     showCitySelector = false
                 )
             }
+            updatePreferencesUseCase.setDefaultCity(city.id)
             loadWeather(city.cityName)
         }
     }

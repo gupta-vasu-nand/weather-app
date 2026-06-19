@@ -1,7 +1,7 @@
 package com.weatherapp.utils
 
 object Constants {
-    const val DATABASE_NAME = "weather_app.db"
+    const val DATABASE_NAME = "weather_app_database"
     const val PREFERENCES_NAME = "weather_prefs"
     const val WEATHER_CACHE_TIMEOUT = 30 * 60 * 1000L // 30 minutes
 

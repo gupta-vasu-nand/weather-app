@@ -1,6 +1,7 @@
 package com.weatherapp.presentation.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -44,16 +45,28 @@ fun CityItem(
     Card(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 6.dp),
+            .padding(horizontal = 16.dp, vertical = 6.dp)
+            .then(
+                if (isSelected) {
+                    Modifier.border(
+                        width = 1.dp,
+                        color = MaterialTheme.colorScheme.primary,
+                        shape = RoundedCornerShape(24.dp)
+                    )
+                } else {
+                    Modifier
+                }
+            ),
         shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(
-            containerColor = if (isSelected)
+            containerColor = if (isSelected) {
                 MaterialTheme.colorScheme.primaryContainer
-            else
+            } else {
                 MaterialTheme.colorScheme.surface
+            }
         ),
         elevation = CardDefaults.cardElevation(
-            defaultElevation = if (isSelected) 4.dp else 1.dp
+            defaultElevation = if (isSelected) 2.dp else 0.dp
         ),
         onClick = onCityClick
     ) {
@@ -71,16 +84,16 @@ fun CityItem(
                 verticalAlignment = Alignment.CenterVertically
             ) {
 
-                // Modern Icon Container
                 Box(
                     modifier = Modifier
                         .size(48.dp)
                         .clip(RoundedCornerShape(16.dp))
                         .background(
-                            if (isSelected)
-                                MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
-                            else
+                            if (isSelected) {
+                                MaterialTheme.colorScheme.secondaryContainer
+                            } else {
                                 MaterialTheme.colorScheme.surfaceVariant
+                            }
                         ),
                     contentAlignment = Alignment.Center
                 ) {
@@ -91,24 +104,36 @@ fun CityItem(
                             CityType.OTHER -> Icons.Default.Place
                         },
                         contentDescription = city.type.name,
-                        tint = if (isSelected)
-                            MaterialTheme.colorScheme.primary
-                        else
+                        tint = if (isSelected) {
+                            MaterialTheme.colorScheme.onPrimaryContainer
+                        } else {
                             MaterialTheme.colorScheme.onSurfaceVariant
+                        }
                     )
                 }
 
-                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
                     Text(
                         text = city.cityName,
                         style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold
+                        fontWeight = FontWeight.SemiBold,
+                        color = if (isSelected) {
+                            MaterialTheme.colorScheme.onPrimaryContainer
+                        } else {
+                            MaterialTheme.colorScheme.onSurface
+                        }
                     )
 
                     Text(
                         text = "${city.lat}, ${city.lon}",
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = if (isSelected) {
+                            MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.75f)
+                        } else {
+                            MaterialTheme.colorScheme.onSurfaceVariant
+                        }
                     )
                 }
             }
@@ -122,15 +147,17 @@ fun CityItem(
                     onClick = onFavoriteClick
                 ) {
                     Icon(
-                        imageVector = if (city.isFavorite)
+                        imageVector = if (city.isFavorite) {
                             Icons.Default.Favorite
-                        else
-                            Icons.Default.FavoriteBorder,
+                        } else {
+                            Icons.Default.FavoriteBorder
+                        },
                         contentDescription = "Favorite",
-                        tint = if (city.isFavorite)
+                        tint = if (city.isFavorite) {
                             MaterialTheme.colorScheme.tertiary
-                        else
+                        } else {
                             MaterialTheme.colorScheme.onSurfaceVariant
+                        }
                     )
                 }
 
@@ -148,9 +175,9 @@ fun CityItem(
     }
 }
 
-@Preview
+@Preview(showBackground = true)
 @Composable
-fun CityItemPreview() {
+private fun CityItemPreview() {
     CityItem(
         city = City(
             id = 1,

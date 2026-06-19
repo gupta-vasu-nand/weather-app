@@ -1,5 +1,8 @@
 package com.weatherapp.domain.model
 
+import androidx.compose.runtime.Immutable
+
+@Immutable
 data class AirQuality(
     val co: Double,
     val no2: Double,

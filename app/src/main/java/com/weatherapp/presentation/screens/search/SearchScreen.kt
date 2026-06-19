@@ -1,9 +1,15 @@
 package com.weatherapp.presentation.screens.search
 
+import android.Manifest
+import android.content.pm.PackageManager
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -14,44 +20,53 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.AddLocation
-import androidx.compose.material.icons.filled.Clear
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.MyLocation
+import androidx.compose.material.icons.filled.Place
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Work
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Divider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Snackbar
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldDefaults
+import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.weatherapp.domain.model.City
 import com.weatherapp.domain.model.CityType
-import com.weatherapp.presentation.components.CityItem
+import com.weatherapp.presentation.theme.DarkTealPrimary
+import com.weatherapp.presentation.theme.TealPrimary
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SearchScreen(
     viewModel: SearchViewModel = hiltViewModel(),
@@ -60,316 +75,171 @@ fun SearchScreen(
     modifier: Modifier = Modifier
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
-    val focusManager = LocalFocusManager.current
+    val context = LocalContext.current
 
-    // Handle navigation when city is saved
-    LaunchedEffect(state.shouldNavigateBack) {
-        if (state.shouldNavigateBack) {
-            // Find the newly saved city from recent searches
-            val savedCity = state.recentSearches.firstOrNull()
-            savedCity?.let {
-                onCitySelected(it)
-            }
-            viewModel.resetNavigation()
+    val permissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted) {
+            viewModel.detectLocationAndSearch()
         }
     }
 
-    Column(
+    LaunchedEffect(state.shouldNavigateBack) {
+        if (state.shouldNavigateBack) {
+            onBackClick()
+        }
+    }
+
+    Box(
         modifier = modifier
             .fillMaxSize()
-            .padding(16.dp)
+            .background(MaterialTheme.colorScheme.background)
     ) {
-        // Search field
-        SearchBar(
-            query = state.searchQuery,
-            onQueryChange = viewModel::onSearchQueryChanged,
-            onSearch = {
-                focusManager.clearFocus()
-                viewModel.searchCity(state.searchQuery)
-            },
-            onClear = viewModel::clearSearch
-        )
+        Column(
+            modifier = Modifier.fillMaxSize()
+        ) {
+            // Search Bar Section (Integrated into the screen content)
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp)
+            ) {
+                ModernSearchBar(
+                    query = state.searchQuery,
+                    onQueryChange = viewModel::onSearchQueryChanged,
+                    onClear = viewModel::clearSearch,
+                    onLocationClick = {
+                        val permission = Manifest.permission.ACCESS_FINE_LOCATION
+                        if (ContextCompat.checkSelfPermission(
+                                context,
+                                permission
+                            ) == PackageManager.PERMISSION_GRANTED
+                        ) {
+                            viewModel.detectLocationAndSearch()
+                        } else {
+                            permissionLauncher.launch(permission)
+                        }
+                    },
+                    isLocating = state.isLocating
+                )
 
-        // Error/Success messages
-        state.error?.let { error ->
-            Spacer(modifier = Modifier.height(8.dp))
-            Snackbar(
-                modifier = Modifier.fillMaxWidth(),
-                action = {
-                    TextButton(onClick = { viewModel.clearMessages() }) {
-                        Text("Dismiss")
-                    }
+                Spacer(Modifier.height(12.dp))
+
+                // City Type Selection
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    CityTypeChip(
+                        CityType.HOME,
+                        state.selectedCityType == CityType.HOME
+                    ) { viewModel.setCityType(CityType.HOME) }
+                    CityTypeChip(
+                        CityType.WORK,
+                        state.selectedCityType == CityType.WORK
+                    ) { viewModel.setCityType(CityType.WORK) }
+                    CityTypeChip(
+                        CityType.OTHER,
+                        state.selectedCityType == CityType.OTHER
+                    ) { viewModel.setCityType(CityType.OTHER) }
                 }
-            ) {
-                Text(text = error)
             }
-        }
 
-        state.successMessage?.let { message ->
-            Spacer(modifier = Modifier.height(8.dp))
-            Snackbar(
-                modifier = Modifier.fillMaxWidth(),
-                containerColor = MaterialTheme.colorScheme.primaryContainer,
-                contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                action = {
-                    TextButton(onClick = { viewModel.clearMessages() }) {
-                        Text("Dismiss")
-                    }
+            Divider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+
+            if (state.isSearching) {
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator(color = TealPrimary)
                 }
-            ) {
-                Text(text = message)
-            }
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // City Type Selection (always show when searching)
-        if (state.searchQuery.isNotEmpty()) {
-            Text(
-                text = "Save as:",
-                style = MaterialTheme.typography.bodyMedium,
-                modifier = Modifier.padding(bottom = 8.dp)
-            )
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                CityTypeChip(CityType.HOME, state.selectedCityType == CityType.HOME) { viewModel.setCityType(CityType.HOME) }
-                CityTypeChip(CityType.WORK, state.selectedCityType == CityType.WORK) { viewModel.setCityType(CityType.WORK) }
-                CityTypeChip(CityType.OTHER, state.selectedCityType == CityType.OTHER) { viewModel.setCityType(CityType.OTHER) }
-            }
-            Spacer(modifier = Modifier.height(16.dp))
-        }
-
-        // Search results or add custom city option
-        if (state.isSearching) {
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
-                CircularProgressIndicator()
-            }
-        } else if (state.searchResults.isNotEmpty()) {
-            // Show search results
-            LazyColumn(
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                items(
-                    items = state.searchResults,
-                    key = { "${it.cityName}-${it.lat}-${it.lon}" }
-                ) { city ->
-                    SearchResultItem(
-                        city = city,
-                        onCitySelected = {
+            } else if (state.searchResults.isNotEmpty()) {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    items(state.searchResults) { city ->
+                        SearchResultCard(city = city) {
                             viewModel.saveCity(city)
                         }
-                    )
-                }
-
-                // Add "Add as new city" option if search query doesn't match any results exactly
-                if (state.searchQuery.isNotEmpty() &&
-                    !state.searchResults.any {
-                        it.cityName.equals(state.searchQuery, ignoreCase = true)
-                    }) {
-                    item {
-                        AddCustomCityItem(
-                            cityName = state.searchQuery,
-                            onAddClick = { viewModel.addCustomCity() }
-                        )
                     }
                 }
-            }
-        } else if (state.searchQuery.isNotEmpty() && !state.isSearching) {
-            // No results found - show option to add as custom city
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Text(
-                    text = "No cities found",
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-                )
-                Spacer(modifier = Modifier.height(16.dp))
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    onClick = { viewModel.addCustomCity() },
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.primaryContainer
-                    )
-                ) {
+            } else {
+                // Show Recent Searches
+                if (state.recentSearches.isNotEmpty() && state.searchQuery.isEmpty()) {
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(16.dp),
-                        horizontalArrangement = Arrangement.Center,
+                            .padding(horizontal = 16.dp, vertical = 8.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.AddLocation,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onPrimaryContainer
-                        )
-                        Spacer(modifier = Modifier.padding(horizontal = 8.dp))
                         Text(
-                            text = "Add '${state.searchQuery}' as new city",
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer
+                            "Recent Searches",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
                         )
+                    }
+
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        items(state.recentSearches) { city ->
+                            RecentSearchItem(
+                                city = city,
+                                onCityClick = { viewModel.selectRecentCity(city) },
+                                onDeleteClick = { viewModel.deleteCity(city) }
+                            )
+                        }
+                    }
+                } else if (state.searchQuery.isNotEmpty()) {
+                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        Text("No results found for \"${state.searchQuery}\"")
                     }
                 }
             }
         }
 
-        // Saved cities (recent searches)
-        if (state.recentSearches.isNotEmpty() && state.searchQuery.isEmpty()) {
-            Text(
-                text = "Saved Cities",
-                style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.padding(vertical = 8.dp)
-            )
-
-            LazyColumn(
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                items(
-                    items = state.recentSearches,
-                    key = { it.id }
-                ) { city ->
-                    CityItem(
-                        city = city,
-                        onCityClick = {
-                            onCitySelected(city)
-                        },
-                        onFavoriteClick = { viewModel.toggleFavorite(city) },
-                        onDeleteClick = { viewModel.deleteCity(city) }
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun AddCustomCityItem(
-    cityName: String,
-    onAddClick: () -> Unit
-) {
-    Card(
-        onClick = onAddClick,
-        shape = RoundedCornerShape(26.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.secondaryContainer
-        )
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(20.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(44.dp)
-                    .clip(RoundedCornerShape(14.dp))
-                    .background(MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.1f)),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    Icons.Default.AddLocation,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSecondaryContainer
-                )
-            }
-
-            Spacer(Modifier.width(16.dp))
-
-            Column(Modifier.weight(1f)) {
-                Text(
-                    "Add as new city",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.onSecondaryContainer
-                )
-                Text(
-                    cityName,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.7f)
-                )
-            }
-
-            Icon(
-                Icons.Default.Add,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSecondaryContainer
+        // Error Handling
+        state.error?.let { error ->
+            SnackbarHost(
+                hostState = remember { SnackbarHostState() }.apply {
+                    LaunchedEffect(error) {
+                        showSnackbar(error)
+                        viewModel.clearMessages()
+                    }
+                },
+                modifier = Modifier.align(Alignment.BottomCenter)
             )
         }
     }
 }
 
 @Composable
-fun SearchResultItem(
-    city: City,
-    onCitySelected: () -> Unit
-) {
-    Card(
-        onClick = onCitySelected,
-        shape = RoundedCornerShape(22.dp),
-        elevation = CardDefaults.cardElevation(2.dp),
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 18.dp, vertical = 18.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-
-            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text(
-                    city.cityName,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold
-                )
-                Text(
-                    String.format("%.2f, %.2f", city.lat, city.lon),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-
-            Box(
-                modifier = Modifier
-                    .size(40.dp)
-                    .clip(RoundedCornerShape(14.dp))
-                    .background(MaterialTheme.colorScheme.primaryContainer),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    Icons.Default.Add,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onPrimaryContainer
-                )
-            }
-        }
-    }
-}
-
-
-@Composable
-fun SearchBar(
+fun ModernSearchBar(
     query: String,
     onQueryChange: (String) -> Unit,
-    onSearch: () -> Unit,
-    onClear: () -> Unit
+    onClear: () -> Unit,
+    onLocationClick: () -> Unit,
+    isLocating: Boolean
 ) {
     Card(
-        shape = RoundedCornerShape(28.dp),
-        elevation = CardDefaults.cardElevation(6.dp),
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface.copy(
+                alpha = 0.9f
+            )
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f))
     ) {
         Row(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 18.dp, vertical = 14.dp),
+                .padding(horizontal = 12.dp, vertical = 4.dp)
+                .fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Icon(
@@ -378,31 +248,144 @@ fun SearchBar(
                 tint = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
-            Spacer(Modifier.width(12.dp))
-
-            Box(Modifier.weight(1f)) {
-                if (query.isEmpty()) {
-                    Text(
-                        "Search cities",
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-                androidx.compose.foundation.text.BasicTextField(
-                    value = query,
-                    onValueChange = onQueryChange,
-                    singleLine = true,
-                    textStyle = MaterialTheme.typography.bodyLarge.copy(
-                        color = MaterialTheme.colorScheme.onSurface
-                    ),
-                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-                    keyboardActions = KeyboardActions(onSearch = { onSearch() })
-                )
-            }
+            TextField(
+                value = query,
+                onValueChange = onQueryChange,
+                modifier = Modifier.weight(1f),
+                placeholder = { Text("Search for a city...") },
+                colors = TextFieldDefaults.colors(
+                    focusedContainerColor = Color.Transparent,
+                    unfocusedContainerColor = Color.Transparent,
+                    disabledContainerColor = Color.Transparent,
+                    focusedIndicatorColor = Color.Transparent,
+                    unfocusedIndicatorColor = Color.Transparent,
+                ),
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search)
+            )
 
             if (query.isNotEmpty()) {
                 IconButton(onClick = onClear) {
-                    Icon(Icons.Default.Clear, contentDescription = null)
+                    Icon(Icons.Default.Close, contentDescription = "Clear")
                 }
+            }
+
+            VerticalDivider(modifier = Modifier
+                .height(24.dp)
+                .padding(horizontal = 4.dp))
+
+            IconButton(onClick = onLocationClick) {
+                if (isLocating) {
+                    CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
+                } else {
+                    Icon(
+                        Icons.Default.MyLocation,
+                        contentDescription = "My Location",
+                        tint = TealPrimary
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun SearchResultCard(
+    city: City,
+    onSaveClick: () -> Unit
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface.copy(
+                alpha = 0.8f
+            )
+        ),
+        onClick = onSaveClick
+    ) {
+        Row(
+            modifier = Modifier
+                .padding(16.dp)
+                .fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Column {
+                Text(
+                    city.cityName,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    "${city.lat}, ${city.lon}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+
+            Box(
+                modifier = Modifier
+                    .size(36.dp)
+                    .clip(CircleShape)
+                    .background(Brush.linearGradient(listOf(TealPrimary, DarkTealPrimary))),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(Icons.Default.Add, contentDescription = null, tint = Color.White)
+            }
+        }
+    }
+}
+
+@Composable
+fun RecentSearchItem(
+    city: City,
+    onCityClick: () -> Unit,
+    onDeleteClick: () -> Unit
+) {
+    Surface(
+        onClick = onCityClick,
+        shape = RoundedCornerShape(16.dp),
+        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.7f),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
+                Icon(
+                    Icons.Default.History,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(18.dp)
+                )
+                Spacer(Modifier.width(12.dp))
+                Column {
+                    Text(
+                        city.cityName,
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Text(
+                        "${city.lat}, ${city.lon}",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+
+            IconButton(onClick = onDeleteClick, modifier = Modifier.size(32.dp)) {
+                Icon(
+                    Icons.Default.Close,
+                    contentDescription = "Remove",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(16.dp)
+                )
             }
         }
     }
@@ -411,64 +394,46 @@ fun SearchBar(
 @Composable
 fun CityTypeChip(
     type: CityType,
-    selected: Boolean,
+    isSelected: Boolean,
     onClick: () -> Unit
 ) {
-    val icon = when (type) {
-        CityType.HOME -> Icons.Default.Home
-        CityType.WORK -> Icons.Default.Work
-        CityType.OTHER -> Icons.Default.Add
+    val contentColor = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
+
+    val chipModifier = if (isSelected) {
+        Modifier.background(Brush.horizontalGradient(listOf(TealPrimary, DarkTealPrimary)))
+    } else {
+        Modifier.background(MaterialTheme.colorScheme.surface.copy(alpha = 0.5f))
     }
 
-    val label = when (type) {
-        CityType.HOME -> "Home"
-        CityType.WORK -> "Work"
-        CityType.OTHER -> "Other"
-    }
-
-    Card(
+    Surface(
         onClick = onClick,
-        shape = RoundedCornerShape(50),
-        colors = CardDefaults.cardColors(
-            containerColor = if (selected)
-                MaterialTheme.colorScheme.primaryContainer
-            else
-                MaterialTheme.colorScheme.surfaceVariant
-        )
+        shape = RoundedCornerShape(16.dp),
+        color = Color.Transparent,
+        modifier = Modifier
+            .clip(RoundedCornerShape(16.dp))
+            .then(chipModifier),
+        border = null
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             Icon(
-                icon,
+                imageVector = when (type) {
+                    CityType.HOME -> Icons.Default.Home
+                    CityType.WORK -> Icons.Default.Work
+                    CityType.OTHER -> Icons.Default.Place
+                },
                 contentDescription = null,
-                modifier = Modifier.size(18.dp),
-                tint = if (selected)
-                    MaterialTheme.colorScheme.onPrimaryContainer
-                else
-                    MaterialTheme.colorScheme.onSurfaceVariant
+                modifier = Modifier.size(16.dp),
+                tint = contentColor
             )
             Text(
-                label,
+                text = type.name.lowercase().replaceFirstChar { it.titlecase() },
                 style = MaterialTheme.typography.labelLarge,
-                color = if (selected)
-                    MaterialTheme.colorScheme.onPrimaryContainer
-                else
-                    MaterialTheme.colorScheme.onSurfaceVariant
+                color = contentColor
             )
         }
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun SearchScreenPreview() {
-    MaterialTheme {
-        SearchScreen(
-            onCitySelected = {},
-            onBackClick = {}
-        )
     }
 }

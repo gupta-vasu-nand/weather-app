@@ -1,10 +1,14 @@
 package com.weatherapp.domain.model
 
+import androidx.compose.runtime.Immutable
+
+@Immutable
 data class Weather(
     val location: Location,
     val current: CurrentWeather
 )
 
+@Immutable
 data class CurrentWeather(
     val lastUpdated: String,
     val tempC: Double,
@@ -23,6 +27,10 @@ data class CurrentWeather(
     val cloud: Int,
     val feelslikeC: Double,
     val feelslikeF: Double,
+    val heatindexC: Double? = null,
+    val heatindexF: Double? = null,
+    val dewpointC: Double? = null,
+    val dewpointF: Double? = null,
     val visibilityKm: Double,
     val visibilityMiles: Double,
     val uv: Double,
@@ -31,6 +39,7 @@ data class CurrentWeather(
     val airQuality: AirQuality?
 )
 
+@Immutable
 data class WeatherCondition(
     val text: String,
     val icon: String,

@@ -25,6 +25,7 @@ data class SavedCitiesState(
 class SavedCitiesViewModel @Inject constructor(
     private val getSavedCitiesUseCase: GetSavedCitiesUseCase,
     private val deleteCityUseCase: DeleteCityUseCase,
+    private val saveCityUseCase: com.weatherapp.domain.usecase.SaveCityUseCase,
     private val updatePreferencesUseCase: UpdatePreferencesUseCase
 ) : ViewModel() {
 
@@ -62,13 +63,7 @@ class SavedCitiesViewModel @Inject constructor(
     fun toggleFavorite(city: City) {
         viewModelScope.launch {
             try {
-                val updatedCity = city.copy(isFavorite = !city.isFavorite)
-                // In a real app, this would call a use case to update the city
-                // For now, we'll update locally
-                val updatedCities = _state.value.cities.map {
-                    if (it.id == city.id) updatedCity else it
-                }
-                _state.update { it.copy(cities = updatedCities) }
+                saveCityUseCase(city.copy(isFavorite = !city.isFavorite))
             } catch (e: Exception) {
                 _state.update { it.copy(error = "Failed to update favorite") }
             }
@@ -79,12 +74,6 @@ class SavedCitiesViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 deleteCityUseCase(city)
-                // If deleted city was default, clear default
-                if (city.id == _state.value.defaultCityId) {
-                    updatePreferencesUseCase.updateTemperatureUnit(
-                        com.weatherapp.domain.model.TemperatureUnit.CELSIUS
-                    ) // Just to trigger an update - in real app, use proper method
-                }
             } catch (e: Exception) {
                 _state.update { it.copy(error = "Failed to delete city") }
             }
@@ -94,19 +83,7 @@ class SavedCitiesViewModel @Inject constructor(
     fun setDefaultCity(city: City) {
         viewModelScope.launch {
             try {
-                // Update all cities to not be default
-                val updatedCities = _state.value.cities.map {
-                    it.copy(isDefault = it.id == city.id)
-                }
-                _state.update {
-                    it.copy(
-                        cities = updatedCities,
-                        defaultCityId = city.id
-                    )
-                }
-
-                // In a real app, this would call a use case to set default city
-                // updatePreferencesUseCase.setDefaultCity(city.id)
+                updatePreferencesUseCase.setDefaultCity(city.id)
             } catch (e: Exception) {
                 _state.update { it.copy(error = "Failed to set default city") }
             }

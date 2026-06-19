@@ -4,28 +4,28 @@ data class TopBarConfig(
     val title: String,
     val showBack: Boolean = false,
     val showSearch: Boolean = false,
-    val showSettings: Boolean = false
+    val showSettings: Boolean = false,
+    val showSavedCities: Boolean = false,
+    val isLarge: Boolean = false
 )
 
 fun getTopBarConfig(route: String?): TopBarConfig {
     return when (route) {
         NavRoutes.Home.route -> TopBarConfig(
-            title = "Weather",
+            title = NavRoutes.Home.title,
             showSearch = true,
-            showSettings = true
+            isLarge = true
         )
         NavRoutes.Search.route -> TopBarConfig(
-            title = "Search City",
+            title = NavRoutes.Search.title,
             showBack = true
         )
         NavRoutes.SavedCities.route -> TopBarConfig(
-            title = "Saved Cities",
-            showBack = true,
-            showSettings = true
+            title = NavRoutes.SavedCities.title,
+            showSearch = true
         )
         NavRoutes.Settings.route -> TopBarConfig(
-            title = "Settings",
-            showBack = true
+            title = NavRoutes.Settings.title
         )
         else -> TopBarConfig(
             title = "Weather App",

@@ -20,7 +20,7 @@ class UpdatePreferencesUseCase @Inject constructor(
     }
 
     suspend fun updateWindSpeedUnit(unit: WindSpeedUnit) {
-        TODO("Implement wind speed unit update")
+        repository.updateWindSpeedUnit(unit)
     }
 
     suspend fun updateThemeMode(mode: ThemeMode) {
@@ -29,5 +29,9 @@ class UpdatePreferencesUseCase @Inject constructor(
 
     suspend fun toggleNotifications(enabled: Boolean) {
         repository.toggleNotifications(enabled)
+    }
+
+    suspend fun setDefaultCity(cityId: Int) {
+        repository.setDefaultCity(cityId)
     }
 }

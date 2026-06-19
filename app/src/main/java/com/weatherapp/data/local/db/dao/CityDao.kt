@@ -36,4 +36,7 @@ interface CityDao {
 
     @Query("SELECT EXISTS(SELECT 1 FROM cities WHERE cityName = :cityName)")
     suspend fun isCitySaved(cityName: String): Boolean
+
+    @Query("DELETE FROM cities")
+    suspend fun deleteAll()
 }

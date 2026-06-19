@@ -60,7 +60,7 @@ class SettingsDataStore @Inject constructor(
 
     val notificationsEnabled: Flow<Boolean> = context.dataStore.data
         .map { preferences ->
-            preferences[PreferencesKeys.NOTIFICATIONS_ENABLED] ?: true
+            preferences[PreferencesKeys.NOTIFICATIONS_ENABLED] ?: false
         }
 
     val defaultCityId: Flow<Int?> = context.dataStore.data

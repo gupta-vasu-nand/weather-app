@@ -1,21 +1,50 @@
 package com.weatherapp.presentation.screens.saved
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.filled.LocationCity
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.weatherapp.domain.model.City
@@ -24,23 +53,50 @@ import com.weatherapp.presentation.components.CityItem
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SavedCitiesScreen(
-    viewModel: SavedCitiesViewModel = hiltViewModel(),
     onCitySelected: (City) -> Unit,
     onBackClick: () -> Unit,
-    modifier: Modifier = Modifier
+    onAddClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    viewModel: SavedCitiesViewModel = hiltViewModel()
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val snackbarHostState = remember { SnackbarHostState() }
 
+    LaunchedEffect(state.error) {
+        state.error?.let {
+            snackbarHostState.showSnackbar(it)
+            viewModel.clearError()
+        }
+    }
     Box(
-        modifier = modifier
+        modifier = Modifier
             .fillMaxSize()
-            .padding(horizontal = 16.dp)
+
     ) {
-        when {
-            state.isLoading -> ModernLoadingState()
-            state.cities.isEmpty() -> ModernEmptyState()
-            else -> CitiesList(
+        AnimatedVisibility(
+            visible = state.isLoading,
+            enter = fadeIn(),
+            exit = fadeOut()
+        ) {
+            ModernLoadingState()
+        }
+
+        AnimatedVisibility(
+            visible = !state.isLoading && state.cities.isEmpty(),
+            enter = fadeIn() + scaleIn(initialScale = 0.9f),
+            exit = fadeOut() + scaleOut(targetScale = 0.9f)
+        ) {
+            ModernEmptyState(onAddClick)
+        }
+
+        AnimatedVisibility(
+            visible = !state.isLoading && state.cities.isNotEmpty(),
+            enter = fadeIn(),
+            exit = fadeOut()
+        ) {
+            CitiesList(
                 cities = state.cities,
+                defaultCityId = state.defaultCityId,
                 onCitySelected = onCitySelected,
                 viewModel = viewModel
             )
@@ -66,58 +122,88 @@ fun ModernLoadingState() {
 }
 
 @Composable
-fun ModernEmptyState() {
+fun ModernEmptyState(onAddClick: () -> Unit) {
+    val alpha by animateFloatAsState(targetValue = 1f, label = "alpha")
+
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(horizontal = 32.dp),
+            .padding(horizontal = 32.dp)
+            .alpha(alpha),
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-
-        Box(
-            modifier = Modifier
-                .size(120.dp)
-                .clip(RoundedCornerShape(36.dp))
-                .background(MaterialTheme.colorScheme.primaryContainer),
-            contentAlignment = Alignment.Center
+        Surface(
+            modifier = Modifier.size(160.dp),
+            shape = RoundedCornerShape(40.dp),
+            color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.1f)
         ) {
-            Icon(
-                Icons.Default.Add,
-                contentDescription = null,
-                modifier = Modifier.size(52.dp),
-                tint = MaterialTheme.colorScheme.onPrimaryContainer
-            )
+            Box(contentAlignment = Alignment.Center) {
+                Icon(
+                    imageVector = Icons.Default.LocationCity,
+                    contentDescription = null,
+                    modifier = Modifier.size(80.dp),
+                    tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.4f)
+                )
+            }
         }
 
-        Spacer(Modifier.height(28.dp))
+        Spacer(Modifier.height(32.dp))
 
         Text(
-            "No saved cities yet",
+            "Your list is empty",
             style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.SemiBold
-        )
-
-        Spacer(Modifier.height(10.dp))
-
-        Text(
-            "Search and save cities to quickly access weather updates.",
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            fontWeight = FontWeight.Black,
             textAlign = TextAlign.Center
         )
+
+        Spacer(Modifier.height(12.dp))
+
+        Text(
+            "Keep track of the weather in all your favorite places. Add a city to get started!",
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center,
+            lineHeight = 24.sp
+        )
+
+        Spacer(Modifier.height(40.dp))
+
+        Button(
+            onClick = onAddClick,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(56.dp),
+            shape = RoundedCornerShape(16.dp),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = MaterialTheme.colorScheme.primary
+            ),
+            elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp)
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Default.Add, contentDescription = null)
+                Spacer(Modifier.width(8.dp))
+                Text(
+                    "Add Location",
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+        }
     }
 }
 
 @Composable
 fun CitiesList(
     cities: List<City>,
+    defaultCityId: Int?,
     onCitySelected: (City) -> Unit,
     viewModel: SavedCitiesViewModel
 ) {
     LazyColumn(
-        contentPadding = PaddingValues(vertical = 12.dp),
-        verticalArrangement = Arrangement.spacedBy(10.dp)
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(bottom = 32.dp, top = 8.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
         items(
             items = cities,
@@ -125,13 +211,14 @@ fun CitiesList(
         ) { city ->
             CityItem(
                 city = city,
-                isSelected = city.isDefault,
+                isSelected = city.id == defaultCityId,
                 onCityClick = {
                     viewModel.setDefaultCity(city)
                     onCitySelected(city)
                 },
                 onFavoriteClick = { viewModel.toggleFavorite(city) },
-                onDeleteClick = { viewModel.deleteCity(city) }
+                onDeleteClick = { viewModel.deleteCity(city) },
+                modifier = Modifier.animateItem()
             )
         }
     }
@@ -143,7 +230,8 @@ fun SavedCitiesScreenPreview() {
     MaterialTheme {
         SavedCitiesScreen(
             onCitySelected = {},
-            onBackClick = {}
+            onBackClick = {},
+            onAddClick = {}
         )
     }
 }

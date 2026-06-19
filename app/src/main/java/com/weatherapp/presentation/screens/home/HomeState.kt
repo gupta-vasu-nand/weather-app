@@ -4,7 +4,7 @@ import com.weatherapp.domain.model.City
 import com.weatherapp.domain.model.Weather
 
 data class HomeState(
-    val isLoading: Boolean = false,
+    val isLoading: Boolean = true,
     val weather: Weather? = null,
     val error: String? = null,
     val isRefreshing: Boolean = false,

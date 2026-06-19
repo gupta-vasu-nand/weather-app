@@ -1,6 +1,7 @@
 package com.weatherapp.data.remote.source
 
 import com.weatherapp.data.remote.api.WeatherApiService
+import com.weatherapp.data.remote.dto.LocationDto
 import com.weatherapp.data.remote.dto.WeatherResponseDto
 import com.weatherapp.utils.Resource
 import kotlinx.coroutines.flow.Flow
@@ -58,5 +59,16 @@ class RemoteDataSource @Inject constructor(
     fun getCurrentWeatherFlow(city: String): Flow<Resource<WeatherResponseDto>> = flow {
         emit(Resource.Loading)
         emit(getCurrentWeather(city))
+    }
+
+    suspend fun searchCities(query: String): Resource<List<LocationDto>> {
+        return try {
+            val response = apiService.searchCities(query)
+            Resource.Success(response)
+        } catch (e: Exception) {
+            Resource.Error(
+                message = "Search Error: ${e.message}"
+            )
+        }
     }
 }

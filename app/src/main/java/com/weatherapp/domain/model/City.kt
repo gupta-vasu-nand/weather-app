@@ -1,5 +1,8 @@
 package com.weatherapp.domain.model
 
+import androidx.compose.runtime.Immutable
+
+@Immutable
 data class City(
     val id: Int = 0,
     val cityName: String,

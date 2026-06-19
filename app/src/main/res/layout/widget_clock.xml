@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<TextClock xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_text_clock"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:format12Hour="hh:mm a"
+    android:format24Hour="HH:mm"
+    android:textColor="#FFFFFF"
+    android:textSize="16sp"
+    android:textStyle="normal"
+    android:fontFamily="sans-serif-medium"
+    android:letterSpacing="0.03"
+    android:shadowColor="#66000000"
+    android:shadowDx="0"
+    android:shadowDy="1"
+    android:shadowRadius="2" />

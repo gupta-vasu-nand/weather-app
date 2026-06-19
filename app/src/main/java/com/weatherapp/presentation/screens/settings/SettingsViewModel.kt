@@ -78,8 +78,7 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 _state.update { it.copy(windSpeedUnit = unit) }
-                // In a real app, this would call the use case
-                // updatePreferencesUseCase.updateWindSpeedUnit(unit)
+                updatePreferencesUseCase.updateWindSpeedUnit(unit)
             } catch (e: Exception) {
                 _state.update { it.copy(error = "Failed to update wind speed unit") }
             }

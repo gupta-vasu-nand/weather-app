@@ -1,18 +1,22 @@
 package com.weatherapp.di
 
+import android.content.Context
 import com.jakewharton.retrofit2.converter.kotlinx.serialization.asConverterFactory
 import com.weatherapp.BuildConfig
 import com.weatherapp.data.remote.api.WeatherApiService
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
+import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import kotlinx.serialization.json.Json
+import okhttp3.Cache
 import okhttp3.Interceptor
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
+import java.io.File
 import java.util.concurrent.TimeUnit
 import javax.inject.Singleton
 
@@ -22,6 +26,13 @@ object NetworkModule {
 
     private const val BASE_URL = "https://api.weatherapi.com/v1/"
     private const val TIMEOUT_SECONDS = 30L
+    private const val CACHE_SIZE = 10 * 1024 * 1024L // 10 MB
+
+    @Provides
+    @Singleton
+    fun provideCache(@ApplicationContext context: Context): Cache {
+        return Cache(File(context.cacheDir, "http_cache"), CACHE_SIZE)
+    }
 
     @Provides
     @Singleton
@@ -66,11 +77,13 @@ object NetworkModule {
     @Singleton
     fun provideOkHttpClient(
         apiKeyInterceptor: Interceptor,
-        loggingInterceptor: HttpLoggingInterceptor
+        loggingInterceptor: HttpLoggingInterceptor,
+        cache: Cache
     ): OkHttpClient {
         return OkHttpClient.Builder()
             .addInterceptor(apiKeyInterceptor)
             .addInterceptor(loggingInterceptor)
+            .cache(cache)
             .connectTimeout(TIMEOUT_SECONDS, TimeUnit.SECONDS)
             .readTimeout(TIMEOUT_SECONDS, TimeUnit.SECONDS)
             .writeTimeout(TIMEOUT_SECONDS, TimeUnit.SECONDS)

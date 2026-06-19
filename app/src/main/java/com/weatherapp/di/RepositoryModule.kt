@@ -22,13 +22,17 @@ object RepositoryModule {
     fun provideWeatherRepository(
         database: AppDatabase,
         remoteDataSource: RemoteDataSource,
-        settingsDataStore: SettingsDataStore
+        settingsDataStore: SettingsDataStore,
+        cacheManager: com.weatherapp.utils.WeatherCacheManager,
+        @dagger.hilt.android.qualifiers.ApplicationContext context: android.content.Context
     ): WeatherRepository {
         return WeatherRepositoryImpl(
             database = database,
             remoteDataSource = remoteDataSource,
             settingsDataStore = settingsDataStore,
-            gson = Gson()
+            cacheManager = cacheManager,
+            gson = Gson(),
+            context = context
         )
     }
 
@@ -62,6 +66,14 @@ object RepositoryModule {
         repository: WeatherRepository
     ): DeleteCityUseCase {
         return DeleteCityUseCase(repository)
+    }
+
+    @Provides
+    @Singleton
+    fun provideSearchCityUseCase(
+        repository: WeatherRepository
+    ): SearchCityUseCase {
+        return SearchCityUseCase(repository)
     }
 
     @Provides

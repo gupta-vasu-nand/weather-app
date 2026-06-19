@@ -20,7 +20,7 @@ fun LocationDto.toDomain(): Location {
         country = country,
         lat = lat,
         lon = lon,
-        localtime = localtime
+        localtime = localtime ?: ""
     )
 }
 
@@ -43,6 +43,10 @@ fun CurrentWeatherDto.toDomain(): CurrentWeather {
         cloud = cloud,
         feelslikeC = feelslike_c,
         feelslikeF = feelslike_f,
+        heatindexC = heatindex_c,
+        heatindexF = heatindex_f,
+        dewpointC = dewpoint_c,
+        dewpointF = dewpoint_f,
         visibilityKm = vis_km,
         visibilityMiles = vis_miles,
         uv = uv,
@@ -70,5 +74,14 @@ fun AirQualityDto.toDomain(): AirQuality {
         pm10 = pm10,
         usEpaIndex = usEpaIndex,
         gbDefraIndex = gbDefraIndex
+    )
+}
+
+fun LocationDto.toCity(): com.weatherapp.domain.model.City {
+    return com.weatherapp.domain.model.City(
+        cityName = name,
+        lat = lat,
+        lon = lon,
+        type = com.weatherapp.domain.model.CityType.OTHER
     )
 }

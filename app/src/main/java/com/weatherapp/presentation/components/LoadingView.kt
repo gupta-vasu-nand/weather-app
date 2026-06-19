@@ -1,6 +1,5 @@
 package com.weatherapp.presentation.components
 
-import androidx.compose.animation.core.FastOutLinearInEasing
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
@@ -25,7 +24,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -90,7 +88,7 @@ fun ShimmerBox(
     modifier: Modifier = Modifier,
     corner: Dp = 16.dp
 ) {
-    val baseColor = MaterialTheme.colorScheme.surfaceVariant
+    val baseColor = MaterialTheme.colorScheme.background
     val highlight = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f)
 
     val transition = rememberInfiniteTransition(label = "shimmer")
@@ -134,7 +132,9 @@ fun LoadingOverlay(
                 contentAlignment = Alignment.Center
             ) {
                 CircularProgressIndicator(
-                    strokeWidth = 4.dp
+                    strokeWidth = 4.dp,
+                    color = MaterialTheme.colorScheme.primary,
+                    trackColor = MaterialTheme.colorScheme.surfaceVariant
                 )
             }
         }
