@@ -1,215 +1,128 @@
-# WeatherApp — Modern Android Weather Application
+# WeatherApp - Modern Android Weather Experience
 
-WeatherApp is a modern Android application built with Jetpack Compose that provides real-time weather information using the WeatherAPI service.
-The app follows clean MVVM architecture principles, supports offline storage, and delivers a polished Material You user interface.
+[![Kotlin](https://img.shields.io/badge/Kotlin-1.9+-7F52FF?logo=kotlin&logoColor=white)](https://kotlinlang.org)
+[![Android](https://img.shields.io/badge/Android-SDK%2024+-3DDC84?logo=android&logoColor=white)](https://developer.android.com)
+[![Compose](https://img.shields.io/badge/Jetpack%20Compose-1.5+-4285F4?logo=jetpack-compose&logoColor=white)](https://developer.android.com/jetpack/compose)
+[![Gradle](https://img.shields.io/badge/Gradle-8.0+-02303A?logo=gradle&logoColor=white)](https://gradle.org)
+[![KSP](https://img.shields.io/badge/KSP-Symbol%20Processing-orange)](https://kotlinlang.org/docs/ksp-overview.html)
+[![License](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
----
-
-## Overview
-
-WeatherApp helps users stay updated with accurate weather information while offering a smooth and customizable user experience. Users can manage multiple cities, view detailed atmospheric conditions, and personalize units and themes according to their preferences.
+WeatherApp is a sophisticated Android application developed using Jetpack Compose. It delivers high-fidelity, real-time meteorological data and comprehensive city management features. The project is engineered following Clean Architecture principles and the MVVM design pattern to ensure scalability, maintainability, and testability.
 
 ---
 
 ## Features
 
-### Real-Time Weather
-
-* Live weather updates for any city
-* Temperature, humidity, wind speed, pressure, UV index
-* Air quality metrics and pollutant levels
-* “Feels like” temperature and visibility data
-
-### City Management
-
-* Save cities as Home, Work, or Other
-* Mark cities as favorites
-* Set a default city
-* Add custom cities manually
-* Smart city search with suggestions
-
-### Modern User Interface
-
-* Built entirely with Jetpack Compose
-* Material You design system
-* Adaptive light, dark, and system themes
-* Weather-based gradient backgrounds
-* Smooth animations and transitions
-* Shimmer loading states
-* User-friendly empty and error screens
-
-### Customization
-
-* Temperature units: Celsius / Fahrenheit
-* Wind speed units: km/h / mph
-* Theme modes: Light / Dark / System default
-* Notification preferences
-
-### Offline Support
-
-* Local caching using Room database
-* Saved cities stored on device
-* Preferences persisted using DataStore
+- **Real-Time Weather Data**: Seamlessly fetches live updates for global locations via integration with the WeatherAPI service.
+- **Advanced Metrics**: Provides in-depth analysis of temperature, atmospheric pressure, wind velocity, humidity levels, UV index, and Air Quality Index (AQI).
+- **Location Management**: Robust system for saving and organizing multiple favorite locations with an intelligent search and suggestion mechanism.
+- **Material 3 Interface**: A contemporary user interface leveraging Material You concepts, featuring dynamic color support and weather-adaptive UI states.
+- **Offline Reliability**: Implements an offline-first strategy using Room database for caching weather data and DataStore for persistent user preferences.
+- **Glance App Widget**: A modern home screen widget built with Jetpack Glance, offering immediate weather insights without opening the application.
 
 ---
 
-## Application Screenshots
+## Screenshots
 
-### Home Screen
+### Home and Search Interface
+| Light Mode | Dark Mode |
+|:---:|:---:|
+| <img src="app/src/main/res/images/home_lm.png" width="300" /> | <img src="app/src/main/res/images/home_dm.png" width="300" /> |
+| <img src="app/src/main/res/images/search_lm.png" width="300" /> | <img src="app/src/main/res/images/search_dm.png" width="300" /> |
 
-[View Image](app/src/main/res/drawable/showcase_home.png)
-
-### City Search
-
-[View Image](app/src/main/res/drawable/showcase_search.png)
-
-### Settings
-
-[View Image](app/src/main/res/drawable/showcase_settings.png)
+### Saved Locations and Settings
+| Light Mode | Dark Mode |
+|:---:|:---:|
+| <img src="app/src/main/res/images/saved_lm.png" width="300" /> | <img src="app/src/main/res/images/saved_dm.png" width="300" /> |
+| <img src="app/src/main/res/images/settings_lm.png" width="300" /> | <img src="app/src/main/res/images/settings_dm.png" width="300" /> |
 
 ---
 
-## Architecture
+## Technical Architecture
 
-The application follows MVVM Clean Architecture principles:
+The application is architected using the Clean Architecture pattern, divided into three distinct layers to maintain a strict separation of concerns.
 
-Presentation Layer (Jetpack Compose UI)
-ViewModels (State Management)
-Domain Layer (Business Logic & Use Cases)
-Data Layer (Repository Pattern)
-Remote API + Local Database
+### 1. Domain Layer
+The central layer containing pure business logic. It is independent of any other layers or frameworks.
+- **Entities**: Business models such as `Weather`, `City`, and `AirQuality`.
+- **Use Cases**: Encapsulates specific business logic like `GetWeatherUseCase`, `SaveCityUseCase`, and `SearchCityUseCase`.
+- **Repository Interfaces**: Defines the contracts for data operations that the Data layer must implement.
 
-### Architectural Highlights
+### 2. Data Layer
+Responsible for data orchestration from various sources.
+- **Remote Data Source**: Handles network operations using Retrofit and OkHttp.
+- **Local Data Source**: Manages persistent storage using Room for the weather cache and DataStore for user settings.
+- **Repositories Implementation**: Implements the domain repository interfaces and manages the data flow logic (e.g., caching strategies).
+- **Mappers**: Converts data transfer objects (DTOs) from the API or database into domain entities.
 
-* Unidirectional data flow
-* Repository pattern implementation
-* StateFlow with lifecycle-aware state collection
-* Dependency Injection using Hilt
-* Modular and scalable project structure
+### 3. Presentation Layer
+Managed by Jetpack Compose for a fully reactive UI.
+- **ViewModels**: Leverages Hilt for dependency injection and state management using `StateFlow`.
+- **Screens**: Modular Composable functions representing different application states.
+- **Components**: Reusable UI elements such as `WeatherCard`, `CityItem`, and `ErrorView`.
+- **Theme**: Custom implementation of Material 3 with specific support for weather-based dynamic gradients.
 
 ---
 
 ## Technology Stack
 
-### UI
+### Core Development
+- **Kotlin**: Utilized for its safety features and concise syntax.
+- **Jetpack Compose**: The modern toolkit for building native Android UI.
+- **Kotlin Coroutines and Flow**: Handles asynchronous programming and reactive data streams.
 
-* Jetpack Compose
-* Material 3
-* Navigation Compose
-* Coil Image Loading
+### Dependency Injection and Processing
+- **Hilt**: Built on top of Dagger to provide a standard way to incorporate DI into the application.
+- **KSP (Kotlin Symbol Processing)**: Used for high-performance annotation processing for Room and Hilt.
 
-### Architecture
+### Data Persistence and Networking
+- **Room Database**: Provides an abstraction layer over SQLite for robust local data handling.
+- **DataStore Preferences**: A modern replacement for SharedPreferences, utilizing Coroutines and Flow.
+- **Retrofit**: A type-safe HTTP client for Android and Java.
+- **Kotlinx Serialization**: A Kotlin-first approach to JSON parsing and serialization.
 
-* MVVM with Clean Architecture
-* Hilt Dependency Injection
-* Kotlin Coroutines and Flow
-
-### Networking
-
-* Retrofit2
-* Kotlinx Serialization
-* OkHttp Logging Interceptor
-
-### Local Storage
-
-* Room Database
-* Kotlin Symbol Processing (KSP)
-* DataStore Preferences
+### Additional Utilities
+- **Coil**: An image loading library for Android backed by Kotlin Coroutines.
+- **Jetpack Glance**: Used for building App Widgets that are consistent with the Compose UI model.
+- **Accompanist**: A collection of libraries that supplement Jetpack Compose with extra features.
 
 ---
 
-## API Integration
+## Getting Started
 
-Weather data is provided by WeatherAPI.
+### API Configuration
+This application integrates with the [WeatherAPI.com](https://www.weatherapi.com/) service.
+1. Register for an account and obtain a free API key.
+2. In your project's `local.properties` file, add the following entry:
+   ```properties
+   WEATHER_API_KEY=your_actual_api_key_here
+   ```
 
-API Endpoint Used:
-
-```
-/v1/current.json
-```
-
-Website:
-https://www.weatherapi.com/
-
----
-
-## API Key Setup
-
-Add your API key inside the local properties file:
-
-```
-local.properties
-```
-
-```
-WEATHER_API_KEY=your_api_key_here
-```
-
-Expose the key securely through BuildConfig.
+### Installation Procedures
+1. Clone the repository to your local environment:
+   ```bash
+   git clone https://github.com/yourusername/WeatherApp.git
+   ```
+2. Launch Android Studio (version Koala or more recent is recommended).
+3. Allow the project to sync with Gradle.
+4. Execute the application on an emulator or a physical device.
 
 ---
 
-## Installation Guide
-
-1. Clone the repository
-
-```
-git clone https://github.com/yourusername/weatherapp.git
-```
-
-2. Open the project in Android Studio
-
-3. Add your WeatherAPI key
-
-4. Sync Gradle dependencies
-
-5. Run on an emulator or physical device
-
----
-
-## Project Structure
-
-```
+## Project Directory Structure
+```text
 com.weatherapp
-│
-├── data
-│   ├── local
-│   ├── remote
-│   └── repository
-│
-├── domain
-│   ├── model
-│   ├── repository
-│   └── usecase
-│
-├── presentation
-│   ├── components
-│   ├── screens
-│   ├── navigation
-│   └── theme
-│
-├── di
-└── utils
+├── data         # Network and Database implementations, DTOs, and Repositories.
+├── domain       # Business logic entities, Use Cases, and Repository interfaces.
+├── presentation # Composable UI, ViewModels, Theme, and Navigation.
+├── di           # Hilt modules for Dependency Injection.
+└── utils        # Shared utility classes, formatters, and helper extensions.
 ```
-
----
-
-## Key Highlights
-
-* Modern Material You interface
-* Offline-first architecture
-* Smooth and responsive performance
-* Clean and scalable codebase
-* Production-ready structure
 
 ---
 
 ## License
-
-This project is licensed under the MIT License.
+This project is licensed under the terms of the MIT License. Detailed information is available in the [LICENSE](LICENSE) file.
 
 ---
-
-## Developer
-
-Built using Kotlin and modern Android development tools.
+**Developed by Vasu**
