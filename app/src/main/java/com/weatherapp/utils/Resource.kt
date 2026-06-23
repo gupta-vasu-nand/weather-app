@@ -8,10 +8,4 @@ sealed class Resource<out T> {
         val isNetworkError: Boolean = false
     ) : Resource<Nothing>()
     data object Loading : Resource<Nothing>()
-
-    fun isLoading() = this is Loading
-    fun isSuccess() = this is Success
-    fun isError() = this is Error
-
-    fun getOrNull(): T? = if (this is Success) data else null
 }

@@ -48,16 +48,16 @@ WeatherApp delivers high-fidelity weather information with an elegant, responsiv
 
 | **Home Screen (Light)** | **Home Screen (Dark)** | **Search Interface (Light)** | **Search Interface (Dark)** |
 |:---:|:---:|:---:|:---:|
-| <img src="app/src/main/res/images/home_lm.png" width="220" alt="Home Light" /> | <img src="app/src/main/res/images/home_dm.png" width="220" alt="Home Dark" /> | <img src="app/src/main/res/images/search_lm.png" width="220" alt="Search Light" /> | <img src="app/src/main/res/images/search_dm.png" width="220" alt="Search Dark" /> |
+| <img src="images/home_lm.png" width="220" alt="Home Light" /> | <img src="images/home_dm.png" width="220" alt="Home Dark" /> | <img src="images/search_lm.png" width="220" alt="Search Light" /> | <img src="images/search_dm.png" width="220" alt="Search Dark" /> |
 
 | **Saved Locations (Light)** | **Saved Locations (Dark)** | **Settings (Light)** | **Settings (Dark)** |
 |:---:|:---:|:---:|:---:|
-| <img src="app/src/main/res/images/saved_lm.png" width="220" alt="Saved Light" /> | <img src="app/src/main/res/images/saved_dm.png" width="220" alt="Saved Dark" /> | <img src="app/src/main/res/images/settings_lm.png" width="220" alt="Settings Light" /> | <img src="app/src/main/res/images/settings_dm.png" width="220" alt="Settings Dark" /> |
+| <img src="images/saved_lm.png" width="220" alt="Saved Light" /> | <img src="images/saved_dm.png" width="220" alt="Saved Dark" /> | <img src="images/settings_lm.png" width="220" alt="Settings Light" /> | <img src="images/settings_dm.png" width="220" alt="Settings Dark" /> |
 
 ### Glance App Widget
 
 <p align="center">
-  <img src="app/src/main/res/images/widget.png" width="360" alt="Glance App Widget" />
+  <img src="images/widget.png" width="360" alt="Glance App Widget" />
   <br />
   <em>Modern Material 3 home screen widget featuring weather-adaptive backgrounds and real-time updates.</em>
 </p>

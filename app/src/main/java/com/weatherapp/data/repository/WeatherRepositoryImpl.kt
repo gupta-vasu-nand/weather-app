@@ -18,6 +18,8 @@ import kotlinx.coroutines.withContext
 import com.google.gson.Gson
 import com.weatherapp.data.remote.dto.toDomain
 import com.weatherapp.data.remote.dto.toCity
+import com.weatherapp.utils.WeatherCacheManager
+import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -26,9 +28,9 @@ class WeatherRepositoryImpl @Inject constructor(
     private val database: AppDatabase,
     private val remoteDataSource: RemoteDataSource,
     private val settingsDataStore: SettingsDataStore,
-    private val cacheManager: com.weatherapp.utils.WeatherCacheManager,
+    private val cacheManager: WeatherCacheManager,
     private val gson: Gson,
-    @dagger.hilt.android.qualifiers.ApplicationContext private val context: android.content.Context
+    @ApplicationContext private val context: android.content.Context
 ) : WeatherRepository {
 
     // Weather data

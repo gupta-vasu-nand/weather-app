@@ -8,7 +8,5 @@
     android:resizeMode="horizontal|vertical"
     android:targetCellWidth="2"
     android:targetCellHeight="1"
-    android:maxResizeWidth="500dp"
-    android:maxResizeHeight="500dp"
     android:updatePeriodMillis="1800000"
     android:widgetCategory="home_screen" />

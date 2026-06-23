@@ -45,7 +45,6 @@ import com.weatherapp.MainActivity
 import com.weatherapp.R
 import com.weatherapp.domain.model.Weather
 import com.weatherapp.domain.repository.WeatherRepository
-import com.weatherapp.utils.Constants
 import com.weatherapp.utils.getWeatherGradient
 import dagger.hilt.EntryPoint
 import dagger.hilt.InstallIn
@@ -55,14 +54,7 @@ import kotlinx.coroutines.flow.first
 
 class WeatherWidget : GlanceAppWidget() {
 
-    override val sizeMode: SizeMode = SizeMode.Responsive(
-        setOf(
-            DpSize(60.dp, 60.dp),   // 1x1
-            DpSize(140.dp, 80.dp),  // 2x1
-            DpSize(260.dp, 130.dp), // 3x2
-            DpSize(340.dp, 240.dp)  // 4x3+
-        )
-    )
+    override val sizeMode: SizeMode = SizeMode.Exact
 
     @EntryPoint
     @InstallIn(SingletonComponent::class)
@@ -228,114 +220,241 @@ class WeatherWidget : GlanceAppWidget() {
         size: DpSize
     ) {
         when {
-            size.width < 110.dp || size.height < 90.dp -> TinyLayout(weather, tempUnit, iconBitmap)
-            size.height < 120.dp -> CompactLayout(weather, tempUnit, iconBitmap)
-            size.height < 210.dp -> MediumLayout(weather, tempUnit, iconBitmap)
-            else -> UltraLayout(weather, tempUnit, iconBitmap)
+            size.width < 110.dp || size.height < 70.dp -> TinyLayout(weather, tempUnit, iconBitmap, size)
+            size.width < 160.dp -> {
+                if (size.height < 110.dp) {
+                    CompactLayout(weather, tempUnit, iconBitmap, size)
+                } else {
+                    MediumLayout(weather, tempUnit, iconBitmap, size)
+                }
+            }
+            else -> {
+                when {
+                    size.height < 110.dp -> CompactLayout(weather, tempUnit, iconBitmap, size)
+                    size.height < 200.dp -> MediumLayout(weather, tempUnit, iconBitmap, size)
+                    else -> UltraLayout(weather, tempUnit, iconBitmap, size)
+                }
+            }
         }
     }
 
     @Composable
-    private fun TinyLayout(weather: Weather, tempUnit: String, iconBitmap: Bitmap?) {
-        Column(
-            modifier = GlanceModifier
-                .fillMaxSize()
-                .padding(8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Image(
-                provider = if (iconBitmap != null) ImageProvider(iconBitmap) else ImageProvider(R.drawable.ic_weather_default),
-                contentDescription = null,
-                modifier = GlanceModifier.size(34.dp)
-            )
-            Spacer(GlanceModifier.height(2.dp))
-            Text(
-                text = "${if (tempUnit == "C") weather.current.tempC.toInt() else weather.current.tempF.toInt()}°",
-                style = TextStyle(
-                    color = ColorProvider(Color.White),
-                    fontSize = 24.sp,
-                    fontWeight = FontWeight.Bold,
+    private fun TinyLayout(weather: Weather, tempUnit: String, iconBitmap: Bitmap?, size: DpSize) {
+        val temp = if (tempUnit == "C") weather.current.tempC.toInt() else weather.current.tempF.toInt()
+        val isVerySmallHeight = size.height < 56.dp
+        val isVerySmallWidth = size.width < 90.dp
+        
+        val iconSize = when {
+            isVerySmallHeight -> 22.dp
+            isVerySmallWidth -> 28.dp
+            else -> 32.dp
+        }
+        
+        val fontSize = when {
+            isVerySmallHeight -> 16.sp
+            isVerySmallWidth -> 20.sp
+            else -> 24.sp
+        }
 
+        if (size.height < 60.dp) {
+            // Horizontal Layout for wide/short widgets
+            Row(
+                modifier = GlanceModifier.fillMaxSize().padding(horizontal = 4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Image(
+                    provider = if (iconBitmap != null) ImageProvider(iconBitmap) else ImageProvider(R.drawable.ic_weather_default),
+                    contentDescription = null,
+                    modifier = GlanceModifier.size(iconSize)
                 )
-            )
+                Spacer(GlanceModifier.width(4.dp))
+                Text(
+                    text = "$temp°",
+                    style = TextStyle(
+                        color = ColorProvider(Color.White),
+                        fontSize = fontSize,
+                        fontWeight = FontWeight.Bold
+                    )
+                )
+            }
+        } else {
+            // Vertical Layout for narrow/tall widgets
+            Column(
+                modifier = GlanceModifier.fillMaxSize().padding(4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Box(
+                    modifier = GlanceModifier
+                        .size(iconSize + 6.dp)
+                        .background(Color.White.copy(alpha = 0.1f))
+                        .cornerRadius(12.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Image(
+                        provider = if (iconBitmap != null) ImageProvider(iconBitmap) else ImageProvider(R.drawable.ic_weather_default),
+                        contentDescription = null,
+                        modifier = GlanceModifier.size(iconSize)
+                    )
+                }
+                Spacer(GlanceModifier.height(2.dp))
+                Text(
+                    text = "$temp°",
+                    style = TextStyle(
+                        color = ColorProvider(Color.White),
+                        fontSize = fontSize,
+                        fontWeight = FontWeight.Bold
+                    )
+                )
+            }
         }
     }
 
     @Composable
-    private fun CompactLayout(weather: Weather, tempUnit: String, iconBitmap: Bitmap?) {
+    private fun CompactLayout(weather: Weather, tempUnit: String, iconBitmap: Bitmap?, size: DpSize) {
+        val showClock = size.width >= 160.dp
+        val showLocation = size.width >= 100.dp
+        
+        val horizontalPadding = when {
+            size.width < 120.dp -> 8.dp
+            size.width < 160.dp -> 12.dp
+            else -> 16.dp
+        }
+        
+        val iconBoxSize = when {
+            size.width < 120.dp -> 32.dp
+            size.width < 160.dp -> 40.dp
+            else -> 48.dp
+        }
+        
+        val iconSize = when {
+            size.width < 120.dp -> 24.dp
+            size.width < 160.dp -> 32.dp
+            else -> 38.dp
+        }
+
         Row(
             modifier = GlanceModifier
                 .fillMaxSize()
-                .padding(horizontal = 16.dp, vertical = 12.dp),
+                .padding(horizontal = horizontalPadding, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalAlignment = Alignment.Start
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Icon with subtle glow
+            // Icon with soft glass effect
             Box(
                 modifier = GlanceModifier
-                    .size(52.dp)
-                    .background(Color.White.copy(alpha = 0.08f))
-                    .cornerRadius(26.dp),
+                    .size(iconBoxSize)
+                    .background(Color.White.copy(alpha = 0.1f))
+                    .cornerRadius(12.dp),
                 contentAlignment = Alignment.Center
             ) {
                 Image(
                     provider = if (iconBitmap != null) ImageProvider(iconBitmap) else ImageProvider(R.drawable.ic_weather_default),
                     contentDescription = null,
-                    modifier = GlanceModifier.size(42.dp)
+                    modifier = GlanceModifier.size(iconSize)
                 )
             }
-            Spacer(GlanceModifier.width(12.dp))
-            Column(modifier = GlanceModifier.defaultWeight()) {
-                Text(
-                    text = weather.location.name,
-                    style = TextStyle(
-                        color = ColorProvider(Color.White),
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Bold
-                    ),
-                    maxLines = 1
-                )
-                Text(
-                    text = weather.current.condition.text,
-                    style = TextStyle(
-                        color = ColorProvider(Color.White.copy(alpha = 0.8f)),
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Medium
-                    ),
-                    maxLines = 1
-                )
-                Text(
-                    text = if (tempUnit == "C") "${weather.current.tempC.toInt()}°" else "${weather.current.tempF.toInt()}°",
-                    style = TextStyle(
-                        color = ColorProvider(Color.White),
-                        fontSize = 28.sp,
-                        fontWeight = FontWeight.Bold
+            
+            Spacer(GlanceModifier.width(if (size.width < 140.dp) 8.dp else 12.dp))
+            
+            Column(
+                modifier = GlanceModifier.defaultWeight(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                if (showLocation) {
+                    Text(
+                        text = weather.location.name,
+                        style = TextStyle(
+                            color = ColorProvider(Color.White),
+                            fontSize = if (size.width < 140.dp) 12.sp else 14.sp,
+                            fontWeight = FontWeight.Bold
+                        ),
+                        maxLines = 1
                     )
-                )
+                }
+                
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = if (tempUnit == "C") "${weather.current.tempC.toInt()}°" else "${weather.current.tempF.toInt()}°",
+                        style = TextStyle(
+                            color = ColorProvider(Color.White),
+                            fontSize = if (size.width < 140.dp) 16.sp else 20.sp,
+                            fontWeight = FontWeight.Bold
+                        ),
+                        maxLines = 1
+                    )
+                    
+                    if (size.width >= 130.dp) {
+                        Spacer(GlanceModifier.width(6.dp))
+                        Text(
+                            text = weather.current.condition.text,
+                            style = TextStyle(
+                                color = ColorProvider(Color.White.copy(alpha = 0.7f)),
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Medium
+                            ),
+                            maxLines = 1
+                        )
+                    }
+                }
             }
-            AndroidRemoteViews(remoteViews = RemoteViews("com.weatherapp", R.layout.widget_clock))
+
+            if (showClock) {
+                Spacer(GlanceModifier.width(8.dp))
+                Box(
+                    modifier = GlanceModifier
+                        .background(Color.White.copy(alpha = 0.1f))
+                        .cornerRadius(16.dp)
+                        .padding(horizontal = 8.dp, vertical = 4.dp)
+                ) {
+                    AndroidRemoteViews(remoteViews = RemoteViews("com.weatherapp", R.layout.widget_clock))
+                }
+            }
         }
     }
 
     @Composable
-    private fun MediumLayout(weather: Weather, tempUnit: String, iconBitmap: Bitmap?) {
+    private fun MediumLayout(weather: Weather, tempUnit: String, iconBitmap: Bitmap?, size: DpSize) {
+        val showClock = size.width >= 200.dp
+        val showMetrics = size.height >= 140.dp
+        val showFeelsLike = size.height >= 120.dp
+        
+        val numMetrics = when {
+            size.width < 220.dp -> 2
+            size.width < 280.dp -> 3
+            else -> 4
+        }
+
+        val padding = if (size.width < 180.dp) 12.dp else 16.dp
+        val tempTextSize = when {
+            size.width < 160.dp -> 32.sp
+            size.width < 220.dp -> 44.sp
+            else -> 56.sp
+        }
+        val iconBoxSize = when {
+            size.width < 160.dp -> 44.dp
+            size.width < 220.dp -> 56.dp
+            else -> 64.dp
+        }
+
         Column(
             modifier = GlanceModifier
                 .fillMaxSize()
-                .padding(16.dp),
+                .padding(padding),
             verticalAlignment = Alignment.CenterVertically
         ) {
+            // Top Row: Location, Condition & Optional Clock
             Row(
                 modifier = GlanceModifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.Top
             ) {
                 Column(modifier = GlanceModifier.defaultWeight()) {
                     Text(
                         text = weather.location.name,
                         style = TextStyle(
                             color = ColorProvider(Color.White),
-                            fontSize = 20.sp,
+                            fontSize = if (size.width < 160.dp) 14.sp else 18.sp,
                             fontWeight = FontWeight.Bold
                         ),
                         maxLines = 1
@@ -343,97 +462,154 @@ class WeatherWidget : GlanceAppWidget() {
                     Text(
                         text = weather.current.condition.text,
                         style = TextStyle(
-                            color = ColorProvider(Color.White.copy(alpha = 0.85f)),
-                            fontSize = 13.sp,
+                            color = ColorProvider(Color.White.copy(alpha = 0.8f)),
+                            fontSize = 12.sp,
                             fontWeight = FontWeight.Medium
                         ),
                         maxLines = 1
                     )
                 }
-                Box(
-                    modifier = GlanceModifier
-                        .background(Color.White.copy(alpha = 0.1f))
-                        .cornerRadius(50.dp)
-                        .padding(6.dp)
-                ) {
-                    AndroidRemoteViews(
-                        remoteViews = RemoteViews(
-                            "com.weatherapp",
-                            R.layout.widget_clock
-                        )
-                    )
+                
+                if (showClock) {
+                    Box(
+                        modifier = GlanceModifier
+                            .background(Color.White.copy(alpha = 0.1f))
+                            .cornerRadius(12.dp)
+                            .padding(horizontal = 8.dp, vertical = 4.dp)
+                    ) {
+                        AndroidRemoteViews(remoteViews = RemoteViews("com.weatherapp", R.layout.widget_clock))
+                    }
                 }
             }
 
-            Spacer(GlanceModifier.height(8.dp))
+            Spacer(GlanceModifier.defaultWeight())
 
+            // Main Weather Info
             Row(
                 modifier = GlanceModifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = if (tempUnit == "C") "${weather.current.tempC.toInt()}°" else "${weather.current.tempF.toInt()}°",
-                    style = TextStyle(
-                        color = ColorProvider(Color.White),
-                        fontSize = 64.sp,
-                        fontWeight = FontWeight.Bold
+                Column {
+                    Text(
+                        text = if (tempUnit == "C") "${weather.current.tempC.toInt()}°" else "${weather.current.tempF.toInt()}°",
+                        style = TextStyle(
+                            color = ColorProvider(Color.White),
+                            fontSize = tempTextSize,
+                            fontWeight = FontWeight.Bold
+                        )
                     )
-                )
+                    
+                    if (showFeelsLike) {
+                        Text(
+                            text = "Feels like ${if (tempUnit == "C") weather.current.feelslikeC.toInt() else weather.current.feelslikeF.toInt()}°",
+                            style = TextStyle(
+                                color = ColorProvider(Color.White.copy(alpha = 0.6f)),
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Medium
+                            )
+                        )
+                    }
+                }
+                
                 Spacer(GlanceModifier.defaultWeight())
+                
                 Box(
                     modifier = GlanceModifier
-                        .size(72.dp)
+                        .size(iconBoxSize)
                         .background(Color.White.copy(alpha = 0.1f))
-                        .cornerRadius(36.dp),
+                        .cornerRadius(if (size.width < 200.dp) 16.dp else 20.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     Image(
                         provider = if (iconBitmap != null) ImageProvider(iconBitmap) else ImageProvider(R.drawable.ic_weather_default),
                         contentDescription = null,
-                        modifier = GlanceModifier.size(60.dp)
+                        modifier = GlanceModifier.size(iconBoxSize * 0.8f)
                     )
                 }
             }
 
-            Spacer(GlanceModifier.height(12.dp))
+            if (showMetrics) {
+                Spacer(GlanceModifier.defaultWeight())
+                
+                Row(modifier = GlanceModifier.fillMaxWidth()) {
+                    MetricCard(
+                        value = "${weather.current.humidity}%",
+                        label = "Humidity",
+                        iconRes = R.drawable.ic_water_drop,
+                        modifier = GlanceModifier.defaultWeight()
+                    )
 
-            Row(
-                modifier = GlanceModifier.fillMaxWidth()
-            ) {
-                MetricCard(
-                    value = "${weather.current.humidity}%",
-                    label = "Humidity",
-                    iconRes = R.drawable.ic_water_drop,
-                    modifier = GlanceModifier.defaultWeight()
-                )
+                    Spacer(GlanceModifier.width(6.dp))
 
-                Spacer(GlanceModifier.width(6.dp))
+                    MetricCard(
+                        value = "${weather.current.windKph.toInt()} km/h",
+                        label = "Wind",
+                        iconRes = R.drawable.ic_wind,
+                        modifier = GlanceModifier.defaultWeight()
+                    )
 
-                MetricCard(
-                    value = "${weather.current.windKph.toInt()} km/h",
-                    label = "Wind",
-                    iconRes = R.drawable.ic_wind,
-                    modifier = GlanceModifier.defaultWeight()
-                )
+                    if (numMetrics >= 3) {
+                        Spacer(GlanceModifier.width(6.dp))
+                        MetricCard(
+                            value = weather.current.uv.toInt().toString(),
+                            label = "UV",
+                            iconRes = R.drawable.ic_weather_default,
+                            modifier = GlanceModifier.defaultWeight()
+                        )
+                    }
 
-                Spacer(GlanceModifier.width(6.dp))
-
-                MetricCard(
-                    value = weather.current.uv.toInt().toString(),
-                    label = "UV Index",
-                    iconRes = R.drawable.ic_weather_default,
-                    modifier = GlanceModifier.defaultWeight()
-                )
+                    if (numMetrics >= 4) {
+                        Spacer(GlanceModifier.width(6.dp))
+                        MetricCard(
+                            value = "${weather.current.pressureMb.toInt()}",
+                            label = "hPa",
+                            iconRes = R.drawable.ic_pressure,
+                            modifier = GlanceModifier.defaultWeight()
+                        )
+                    }
+                }
             }
         }
     }
 
     @Composable
-    private fun UltraLayout(weather: Weather, tempUnit: String, iconBitmap: Bitmap?) {
+    private fun UltraLayout(weather: Weather, tempUnit: String, iconBitmap: Bitmap?, size: DpSize) {
+        val showClock = size.width >= 220.dp
+        val numMetrics = when {
+            size.width < 220.dp -> 2
+            size.width < 280.dp -> 3
+            else -> 4
+        }
+        val locationTextSize = when {
+            size.width < 220.dp -> 18.sp
+            size.width < 280.dp -> 20.sp
+            else -> 24.sp
+        }
+        val tempTextSize = when {
+            size.width < 220.dp -> 56.sp
+            size.width < 280.dp -> 64.sp
+            else -> 88.sp
+        }
+        val iconBoxSize = when {
+            size.width < 220.dp -> 80.dp
+            size.width < 280.dp -> 90.dp
+            else -> 100.dp
+        }
+        val iconSize = when {
+            size.width < 220.dp -> 64.dp
+            size.width < 280.dp -> 72.dp
+            else -> 84.dp
+        }
+        val cornerRadiusVal = when {
+            size.width < 220.dp -> 40.dp
+            size.width < 280.dp -> 45.dp
+            else -> 50.dp
+        }
+
         Column(
             modifier = GlanceModifier
                 .fillMaxSize()
-                .padding(20.dp),
+                .padding(if (size.width < 250.dp) 16.dp else 20.dp),
             verticalAlignment = Alignment.Top
         ) {
             // Top Row: Location & Clock
@@ -446,7 +622,7 @@ class WeatherWidget : GlanceAppWidget() {
                         text = weather.location.name,
                         style = TextStyle(
                             color = ColorProvider(Color.White),
-                            fontSize = 24.sp,
+                            fontSize = locationTextSize,
                             fontWeight = FontWeight.Bold
                         ),
                         maxLines = 1
@@ -458,7 +634,7 @@ class WeatherWidget : GlanceAppWidget() {
                             text = weather.current.condition.text,
                             style = TextStyle(
                                 color = ColorProvider(Color.White.copy(alpha = 0.85f)),
-                                fontSize = 14.sp,
+                                fontSize = if (size.width < 220.dp) 12.sp else 14.sp,
                                 fontWeight = FontWeight.Medium
                             ),
                             maxLines = 1
@@ -480,22 +656,24 @@ class WeatherWidget : GlanceAppWidget() {
                         )
                     }
                 }
-                Box(
-                    modifier = GlanceModifier
-                        .background(Color.White.copy(alpha = 0.1f))
-                        .cornerRadius(50.dp)
-                        .padding(8.dp)
-                ) {
-                    AndroidRemoteViews(
-                        remoteViews = RemoteViews(
-                            "com.weatherapp",
-                            R.layout.widget_clock_large
+                if (showClock) {
+                    Box(
+                        modifier = GlanceModifier
+                            .background(Color.White.copy(alpha = 0.1f))
+                            .cornerRadius(50.dp)
+                            .padding(8.dp)
+                    ) {
+                        AndroidRemoteViews(
+                            remoteViews = RemoteViews(
+                                "com.weatherapp",
+                                R.layout.widget_clock_large
+                            )
                         )
-                    )
+                    }
                 }
             }
 
-            Spacer(GlanceModifier.height(16.dp))
+            Spacer(GlanceModifier.height(if (size.height < 240.dp) 8.dp else 16.dp))
 
             // Main Weather Display
             Row(
@@ -507,7 +685,7 @@ class WeatherWidget : GlanceAppWidget() {
                         text = if (tempUnit == "C") "${weather.current.tempC.toInt()}°" else "${weather.current.tempF.toInt()}°",
                         style = TextStyle(
                             color = ColorProvider(Color.White),
-                            fontSize = 88.sp,
+                            fontSize = tempTextSize,
                             fontWeight = FontWeight.Bold
                         )
                     )
@@ -515,22 +693,22 @@ class WeatherWidget : GlanceAppWidget() {
                         text = "Feels like ${if (tempUnit == "C") weather.current.feelslikeC.toInt() else weather.current.feelslikeF.toInt()}°",
                         style = TextStyle(
                             color = ColorProvider(Color.White.copy(alpha = 0.7f)),
-                            fontSize = 14.sp,
+                            fontSize = if (size.width < 220.dp) 12.sp else 14.sp,
                             fontWeight = FontWeight.Medium
                         )
                     )
                 }
                 Box(
                     modifier = GlanceModifier
-                        .size(100.dp)
+                        .size(iconBoxSize)
                         .background(Color.White.copy(alpha = 0.08f))
-                        .cornerRadius(50.dp),
+                        .cornerRadius(cornerRadiusVal),
                     contentAlignment = Alignment.Center
                 ) {
                     Image(
                         provider = if (iconBitmap != null) ImageProvider(iconBitmap) else ImageProvider(R.drawable.ic_weather_default),
                         contentDescription = null,
-                        modifier = GlanceModifier.size(84.dp)
+                        modifier = GlanceModifier.size(iconSize)
                     )
                 }
             }
@@ -552,24 +730,35 @@ class WeatherWidget : GlanceAppWidget() {
                     iconRes = R.drawable.ic_water_drop,
                     modifier = GlanceModifier.defaultWeight()
                 )
+
+                Spacer(GlanceModifier.width(4.dp))
+
                 UltraMetricCard(
                     value = "${weather.current.windKph.toInt()} km/h",
                     label = "Wind",
                     iconRes = R.drawable.ic_wind,
                     modifier = GlanceModifier.defaultWeight()
                 )
-                UltraMetricCard(
-                    value = "${weather.current.pressureMb.toInt()} hPa",
-                    label = "Pressure",
-                    iconRes = R.drawable.ic_pressure,
-                    modifier = GlanceModifier.defaultWeight()
-                )
-                UltraMetricCard(
-                    value = if (tempUnit == "C") "${weather.current.feelslikeC.toInt()}°" else "${weather.current.feelslikeF.toInt()}°",
-                    label = "Feels Like",
-                    iconRes = R.drawable.ic_thermometer,
-                    modifier = GlanceModifier.defaultWeight()
-                )
+
+                if (numMetrics >= 3) {
+                    Spacer(GlanceModifier.width(4.dp))
+                    UltraMetricCard(
+                        value = "${weather.current.pressureMb.toInt()} hPa",
+                        label = "Pressure",
+                        iconRes = R.drawable.ic_pressure,
+                        modifier = GlanceModifier.defaultWeight()
+                    )
+                }
+
+                if (numMetrics >= 4) {
+                    Spacer(GlanceModifier.width(4.dp))
+                    UltraMetricCard(
+                        value = if (tempUnit == "C") "${weather.current.feelslikeC.toInt()}°" else "${weather.current.feelslikeF.toInt()}°",
+                        label = "Feels Like",
+                        iconRes = R.drawable.ic_thermometer,
+                        modifier = GlanceModifier.defaultWeight()
+                    )
+                }
             }
         }
     }
@@ -583,8 +772,7 @@ class WeatherWidget : GlanceAppWidget() {
     ) {
         Column(
             modifier = modifier
-                .background(Color.White.copy(alpha = 0.12f))
-                .cornerRadius(16.dp)
+                .background(ImageProvider(R.drawable.widget_metric_chip))
                 .padding(horizontal = 8.dp, vertical = 8.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {

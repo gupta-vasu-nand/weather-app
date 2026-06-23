@@ -6,11 +6,10 @@
     android:format12Hour="hh:mm a"
     android:format24Hour="HH:mm"
     android:textColor="#FFFFFF"
-    android:textSize="16sp"
+    android:textSize="14sp"
     android:textStyle="normal"
     android:fontFamily="sans-serif-medium"
     android:letterSpacing="0.03"
-    android:shadowColor="#66000000"
-    android:shadowDx="0"
-    android:shadowDy="1"
-    android:shadowRadius="2" />
+    android:paddingHorizontal="10dp"
+    android:paddingVertical="5dp"
+    android:background="@drawable/widget_clock_chip" />
